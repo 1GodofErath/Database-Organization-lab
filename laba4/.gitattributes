@@ -1,0 +1,3 @@
+# .gitignore
+mysql_data_encrypted/
+.env
