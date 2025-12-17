@@ -1,0 +1,69 @@
+version: '3.9'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.php
+    container_name: accounting_web
+    ports:
+      - ""
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - accounting_network
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - APP_ENV=development
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.mysql
+    container_name: accounting_db
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --authentication_policy=caching_sha2_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - ""
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - accounting_network
+    security_opt:
+      - no-new-privileges:true
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: accounting_phpmyadmin
+    ports:
+      - ""
+    environment:
+      PMA_HOST: db
+      PMA_ABSOLUTE_URI: http://localhost:8092/
+    depends_on:
+      - db
+    networks:
+      - accounting_network
+
+networks:
+  accounting_network:
+    driver: bridge
+
+volumes:
+  db_data:

@@ -1,0 +1,11 @@
+{
+  "require": {
+    "google/apiclient": "^2.0"
+  },
+  "config": {
+    "process-timeout": 2000,
+    "platform": {
+      "php": "8.3"
+    }
+  }
+}
