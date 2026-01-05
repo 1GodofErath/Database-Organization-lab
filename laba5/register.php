@@ -1,4 +1,8 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
 session_start();
 
 // Генерація CSRF токену
@@ -6,7 +10,15 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-require_once 'db.php';
+// Підключення до БД та отримання об'єкта $pdo
+$pdo = require_once __DIR__ . '/db.php';
+
+// HTTP заголовки безпеки
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: DENY");
+header("X-XSS-Protection: 1; mode=block");
+header("Referrer-Policy: strict-origin-when-cross-origin");
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';");
 
 $errors = [];
 $name = '';
@@ -101,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Реєстрація</title>
     <link rel="stylesheet" href="style/log.css">
 </head>
@@ -115,27 +128,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if (!empty($errors)): ?>
             <div class="alert alert-error">
                 <?php foreach ($errors as $error): ?>
-                    <p><?= htmlspecialchars($error) ?></p>
+                    <p><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></p>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
 
         <form method="POST" id="register-form">
-            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES, 'UTF-8') ?>">
 
             <div class="form-group">
-                <label>Ім'я</label>
-                <input type="text" name="name" class="form-control" value="<?= htmlspecialchars($name) ?>" required minlength="2" maxlength="255">
+                <label for="name">Ім'я</label>
+                <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        class="form-control"
+                        value="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>"
+                        required
+                        minlength="2"
+                        maxlength="255"
+                        autocomplete="name"
+                >
             </div>
 
             <div class="form-group">
-                <label>Email</label>
-                <input type="email" name="email" class="form-control" value="<?= htmlspecialchars($email) ?>" required>
+                <label for="email">Email</label>
+                <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        class="form-control"
+                        value="<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8') ?>"
+                        required
+                        autocomplete="email"
+                >
             </div>
 
             <div class="form-group">
-                <label>Пароль</label>
-                <input type="password" name="password" id="password" class="form-control" minlength="8" maxlength="255" required>
+                <label for="password">Пароль</label>
+                <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-control"
+                        minlength="8"
+                        maxlength="255"
+                        required
+                        autocomplete="new-password"
+                >
                 <div class="password-requirements">
                     <small>Вимоги до пароля:</small>
                     <div class="password-strength">
@@ -151,11 +191,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-
-
             <div class="form-group">
-                <label>Підтвердіть пароль</label>
-                <input type="password" name="password_confirm" id="password_confirm" class="form-control" minlength="8" maxlength="255" required>
+                <label for="password_confirm">Підтвердіть пароль</label>
+                <input
+                        type="password"
+                        id="password_confirm"
+                        name="password_confirm"
+                        class="form-control"
+                        minlength="8"
+                        maxlength="255"
+                        required
+                        autocomplete="new-password"
+                >
                 <small class="form-text" id="password-match"></small>
             </div>
 
@@ -198,7 +245,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const value = password.value;
             let validCount = 0;
 
-            // Мінімум 8 символів
             if (value.length >= 8) {
                 requirements.length.classList.add('valid');
                 validCount++;
@@ -206,7 +252,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 requirements.length.classList.remove('valid');
             }
 
-            // Велика літера (англійські A-Z та українські А-Я)
             if (/[A-ZА-ЯІЇЄҐ]/.test(value)) {
                 requirements.uppercase.classList.add('valid');
                 validCount++;
@@ -214,7 +259,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 requirements.uppercase.classList.remove('valid');
             }
 
-            // Мала літера (англійські a-z та українські а-я)
             if (/[a-zа-яіїєґ]/.test(value)) {
                 requirements.lowercase.classList.add('valid');
                 validCount++;
@@ -222,7 +266,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 requirements.lowercase.classList.remove('valid');
             }
 
-            // Цифра
             if (/\d/.test(value)) {
                 requirements.number.classList.add('valid');
                 validCount++;
@@ -230,7 +273,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 requirements.number.classList.remove('valid');
             }
 
-            // Спеціальний символ
             if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(value)) {
                 requirements.special.classList.add('valid');
                 validCount++;
@@ -238,7 +280,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 requirements.special.classList.remove('valid');
             }
 
-            // Оновлення прогрес-бару
             const percentage = (validCount / 5) * 100;
             strengthBar.style.width = percentage + '%';
 
